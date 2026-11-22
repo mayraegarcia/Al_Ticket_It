@@ -1,0 +1,3 @@
+import React from "react";import {View,Text,StyleSheet} from "react-native";import {useTheme} from "../../theme/ThemeContext";import Ticketito from "../../components/mascot/Ticketito";
+export default function PlaceholderScreen({title}){const {C}=useTheme();return <View style={[s.wrap,{backgroundColor:C.bg}]}><Ticketito size={120}/><Text style={[s.title,{color:C.text}]}>{title}</Text><Text style={[s.desc,{color:C.muted}]}>Esta pantalla la construiremos en la siguiente etapa.</Text></View>}
+const s=StyleSheet.create({wrap:{flex:1,alignItems:"center",justifyContent:"center",padding:30},title:{fontSize:24,fontWeight:"800",marginTop:15},desc:{textAlign:"center",marginTop:8}});

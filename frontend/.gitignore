@@ -1,0 +1,44 @@
+
+# Dependencias
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Archivos generados
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# IDE y editores
+.vscode/
+.idea/
+
+# Caché
+.cache/
+.parcel-cache/
+
+# Android
+android/
+*.keystore
+*.jks
+
+# iOS
+ios/
+*.mobileprovision
+*.p8
+*.p12
+*.key
