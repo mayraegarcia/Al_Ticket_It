@@ -331,23 +331,6 @@ export async function cargarDatosIniciales() {
       total: 30000,
     }),
 
-    // Lucía: compra pendiente.
-    new Compra({
-      id: 2,
-      compradorId: 1,
-      eventoId: 1,
-      fecha: fechaEnDias(-1, "15:00:00"),
-      estado: EstadoCompra.PENDIENTE,
-      detalles: [
-        new DetalleCompra({
-          tipoEntradaId: 2,
-          cantidad: 1,
-          precioUnitario: 30000,
-          subtotal: 30000,
-        }),
-      ],
-      total: 30000,
-    }),
 
     // Lucía: compra utilizada para poder calificar.
     new Compra({

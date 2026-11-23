@@ -41,6 +41,11 @@ export default function MyTicketsScreen({usuario}) {
     const [eventoParaCalificar, setEventoParaCalificar] = useState(null);
     const [resenasHechas, setResenasHechas] = useState([]);
 
+
+    const [modalPagoVisible, setModalPagoVisible] = useState(false);
+    const [modalPagoExitosoVisible, setModalPagoExitosoVisible] = useState(false);
+    const [compraParaPagar, setCompraParaPagar] = useState(null);
+
   useEffect(() => {
     cargarCompras();
   }, []);
@@ -118,10 +123,14 @@ export default function MyTicketsScreen({usuario}) {
   const pagarCompra = async (compra) => {
     try {
       setCancelandoId(compra.id);
+      setError("");
 
       await compraService.confirmarPago(compra.id);
 
       await cargarCompras();
+
+      setModalPagoExitosoVisible(true);
+
     } catch (error) {
       console.error("Error al confirmar el pago:", error);
       setError("No se pudo confirmar el pago");
@@ -129,6 +138,11 @@ export default function MyTicketsScreen({usuario}) {
       setCancelandoId(null);
     }
   };
+
+  function confirmarPago(compra) {
+    setCompraParaPagar(compra);
+    setModalPagoVisible(true);
+  }
 
   // ==============================
   // HELPERS
@@ -562,7 +576,7 @@ export default function MyTicketsScreen({usuario}) {
                 {compra.estado === "PENDIENTE DE PAGO" && (
                   <Pressable
                     disabled={cancelandoId === compra.id}
-                    onPress={() => pagarCompra(compra)}
+                    onPress={() => confirmarPago(compra)}
                     style={{
                       backgroundColor: "#D97706",
                       opacity: cancelandoId === compra.id ? 0.5 : 1,
@@ -686,6 +700,38 @@ export default function MyTicketsScreen({usuario}) {
 
             setCompraSeleccionada(null);
         }}
+        />
+
+        <ConfirmacionModal
+          visible={modalPagoVisible}
+          titulo="Confirmar pago"
+          mensaje="¿Estás seguro de que querés realizar el pago de esta compra?"
+          tipo="warning"
+          textoBoton="Sí, pagar"
+          textoCancelar="Cancelar"
+          mostrarCancelar={true}
+          onCancelar={() => {
+            setModalPagoVisible(false);
+            setCompraParaPagar(null);
+          }}
+          onAceptar={() => {
+            setModalPagoVisible(false);
+
+            if (compraParaPagar) {
+              pagarCompra(compraParaPagar);
+            }
+
+            setCompraParaPagar(null);
+          }}
+        />
+
+        <ConfirmacionModal
+          visible={modalPagoExitosoVisible}
+          titulo="¡Pago exitoso!"
+          mensaje="Tu compra fue confirmada correctamente. Ya podés consultar tu entrada en Mis entradas."
+          tipo="success"
+          textoBoton="¡Genial!"
+          onAceptar={() => setModalPagoExitosoVisible(false)}
         />
 
         <TicketDigital
