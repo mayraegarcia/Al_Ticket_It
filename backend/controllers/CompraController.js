@@ -32,7 +32,8 @@ export class CompraController {
   buscarPorEvento = (req, res, next) => {
     try {
       const compras = this.compraService.buscarPorEvento(
-        Number(req.params.eventoId)
+        Number(req.params.eventoId),
+        req.user.id
       );
 
       res.status(200).json(compras);

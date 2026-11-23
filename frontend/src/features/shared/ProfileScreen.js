@@ -11,7 +11,7 @@ import {
 import { useTheme } from "../../theme/ThemeContext";
 import { useAuth } from "../../context/authContext";
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ onVerFavoritos }) {
   const { C } = useTheme();
   const { usuario, cerrarSesion } = useAuth();
 
@@ -127,6 +127,34 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+            {!esOrganizador && (
+        <Pressable
+          style={[
+            styles.favoritosButton,
+            { backgroundColor: C.card, borderColor: C.border },
+          ]}
+          onPress={onVerFavoritos}
+        >
+          <View style={styles.favoritosContenido}>
+            <Text style={styles.favoritosIcono}>♥</Text>
+
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.favoritosTitulo, { color: C.text }]}>
+                Mis favoritos
+              </Text>
+
+              <Text style={[styles.favoritosDescripcion, { color: C.muted }]}>
+                Ver los eventos que guardaste
+              </Text>
+            </View>
+
+            <Text style={[styles.favoritosFlecha, { color: C.muted }]}>
+              ›
+            </Text>
+          </View>
+        </Pressable>
+      )}
+
       <Pressable
         style={[styles.logoutButton, { borderColor: "#DC2626" }]}
         onPress={cerrarSesion}
@@ -221,5 +249,36 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     fontSize: 15,
     fontWeight: "700",
+  },
+    favoritosButton: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 20,
+  },
+
+  favoritosContenido: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+
+  favoritosIcono: {
+    fontSize: 26,
+    color: "#E5484D",
+  },
+
+  favoritosTitulo: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  favoritosDescripcion: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+
+  favoritosFlecha: {
+    fontSize: 26,
   },
 });

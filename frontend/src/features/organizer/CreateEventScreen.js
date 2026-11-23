@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Modal
 } from "react-native";
 
 import { useTheme } from "../../theme/ThemeContext";
 import { eventoService } from "../../service/eventoService";
+import { categoriaService } from "../../service/categoriaService";
 import { mensajeDeError } from "../../service/api";
+import ConfirmacionModal from "../../components/ui/ConfirmacionModal";
 
 export default function CreateEventScreen({ onCreated }) {
     const { C } = useTheme();
@@ -36,6 +39,32 @@ export default function CreateEventScreen({ onCreated }) {
     mostrarCancelar: false,
     });
 
+    const [categorias, setCategorias] = useState([]);
+    const [cargandoCategorias, setCargandoCategorias] = useState(true);
+
+    const [selectorCategoriasVisible, setSelectorCategoriasVisible] = useState(false);
+
+    useEffect(() => {
+    const cargarCategorias = async () => {
+        try {
+        setCargandoCategorias(true);
+
+        const resultado = await categoriaService.obtenerTodas();
+
+        setCategorias(Array.isArray(resultado) ? resultado : []);
+        } catch (error) {
+        Alert.alert(
+            "Error",
+            "No se pudieron cargar las categorías."
+        );
+        } finally {
+        setCargandoCategorias(false);
+        }
+    };
+
+    cargarCategorias();
+    }, []);
+
   const convertirFecha = () => {
     const partes = fecha.split("/");
 
@@ -55,7 +84,7 @@ export default function CreateEventScreen({ onCreated }) {
     }
 
     if (
-      anio < 2026 ||
+      anio < new Date().getFullYear()  ||
       mes < 1 || mes > 12 ||
       dia < 1 || dia > 31 ||
       horas < 0 || horas > 23 ||
@@ -83,92 +112,75 @@ export default function CreateEventScreen({ onCreated }) {
     return fechaObjeto;
   };
 
-  const guardarEvento = async () => {
-    if (
-      !titulo.trim() ||
-      !descripcion.trim() ||
-      !categoriaId.trim() ||
-      !fecha.trim() ||
-      !hora.trim()
-    ) {
-      Alert.alert(
-        "Datos incompletos",
-        "Completá todos los campos."
-      );
-      return;
-    }
 
+    const confirmarCreacion = async () => {
+    try {
+        setModalVisible(false);
+        setGuardando(true);
+
+        const fechaEvento = convertirFecha();
+
+        const nuevoEvento = {
+        nombre: titulo.trim(),
+        descripcion: descripcion.trim(),
+        categoriaId: Number(categoriaId),
+        fecha: fechaEvento.toISOString(),
+        };
+
+        const eventoCreado = await eventoService.crear(nuevoEvento);
+
+        setEventoPendiente(eventoCreado);
+
+        setModalConfig({
+        titulo: "¡Evento creado!",
+        mensaje: "Tu evento se creó correctamente. Ahora podés configurar sus tipos de entrada.",
+        tipo: "success",
+        textoBoton: "Continuar",
+        mostrarCancelar: false,
+        });
+
+        setModalVisible(true);
+    } catch (error) {
+        setModalConfig({
+        titulo: "Error",
+        mensaje: mensajeDeError(error),
+        tipo: "error",
+        textoBoton: "Aceptar",
+        mostrarCancelar: false,
+        });
+
+        setModalVisible(true);
+    } finally {
+        setGuardando(false);
+    }
+    };
+
+    const guardarEvento = () => {
     if (
-      !Number.isInteger(Number(categoriaId)) ||
-      Number(categoriaId) <= 0
+        !titulo.trim() ||
+        !descripcion.trim() ||
+        !categoriaId ||
+        !fecha.trim() ||
+        !hora.trim()
     ) {
-      Alert.alert(
-        "Categoría inválida",
-        "Ingresá un ID de categoría válido."
-      );
-      return;
+        Alert.alert("Datos incompletos", "Completá todos los campos.");
+        return;
     }
 
     const fechaEvento = convertirFecha();
 
     if (!fechaEvento) {
-      Alert.alert(
+        Alert.alert(
         "Fecha u hora inválida",
-        "Ingresá una fecha válida con formato DD/MM/AAAA y una hora con formato HH:MM."
-      );
-      return;
+        "Ingresá una fecha válida con formato DD/MM/AAAA y hora HH:MM."
+        );
+        return;
     }
 
     if (fechaEvento <= new Date()) {
-      Alert.alert(
-        "Fecha inválida",
-        "El evento debe tener una fecha futura."
-      );
-      return;
+        Alert.alert("Fecha inválida", "El evento debe tener una fecha futura.");
+        return;
     }
-
-    const confirmarCreacion = async () => {
-        try {
-            setModalVisible(false);
-            setGuardando(true);
-
-            const fechaEvento = convertirFecha();
-
-            const nuevoEvento = {
-            nombre: titulo.trim(),
-            descripcion: descripcion.trim(),
-            categoriaId: Number(categoriaId),
-            fecha: fechaEvento.toISOString(),
-            };
-
-            const eventoCreado = await eventoService.crear(nuevoEvento);
-
-            setModalConfig({
-            titulo: "¡Evento creado!",
-            mensaje: "Tu evento se creó correctamente. Ahora podés configurar sus tipos de entrada.",
-            tipo: "success",
-            textoBoton: "Continuar",
-            mostrarCancelar: false,
-            });
-
-            // Guardamos el evento para continuar con su configuración.
-            setEventoPendiente(eventoCreado);
-            setModalVisible(true);
-
-        } catch (error) {
-            setModalConfig({
-            titulo: "Error",
-            mensaje: mensajeDeError(error),
-            tipo: "error",
-            textoBoton: "Aceptar",
-            mostrarCancelar: false,
-            });
-
-            setModalVisible(true);
-        } finally {
-            setGuardando(false);
-        }
-        };
 
     setModalConfig({
         titulo: "¿Crear evento?",
@@ -176,9 +188,10 @@ export default function CreateEventScreen({ onCreated }) {
         tipo: "warning",
         textoBoton: "Confirmar",
         mostrarCancelar: true,
-        });
+    });
 
     setModalVisible(true);
+    };
 
   const campo = (
     label,
@@ -216,90 +229,190 @@ export default function CreateEventScreen({ onCreated }) {
     </View>
   );
 
-  return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: C.bg }}
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={[styles.title, { color: C.text }]}>
-        Crear evento
-      </Text>
 
-      <Text style={[styles.subtitle, { color: C.muted }]}>
-        Completá la información para crear tu evento.
-      </Text>
-
-      {campo(
-        "Nombre del evento",
-        titulo,
-        setTitulo,
-        "Ej: Festival de Música"
-      )}
-
-      {campo(
-        "Descripción",
-        descripcion,
-        setDescripcion,
-        "Contá de qué se trata...",
-        { multiline: true }
-      )}
-
-      {campo(
-        "ID de categoría",
-        categoriaId,
-        setCategoriaId,
-        "Ej: 1",
-        { keyboardType: "number-pad" }
-      )}
-
-      {campo(
-        "Fecha (DD/MM/AAAA)",
-        fecha,
-        setFecha,
-        "15/12/2026"
-      )}
-
-      {campo(
-        "Hora (HH:MM)",
-        hora,
-        setHora,
-        "20:00"
-      )}
-
-      <View
-        style={[
-          styles.notice,
-          { backgroundColor: C.card }
-        ]}
-      >
-        <Text style={[styles.noticeText, { color: C.muted }]}>
-          El evento se creará como borrador. Luego podrás
-          configurar sus entradas y publicarlo.
-        </Text>
-      </View>
-
-      <Pressable
-        style={[
-          styles.button,
-          {
-            backgroundColor: C.primary,
-            opacity: guardando ? 0.7 : 1,
-          },
-        ]}
-        onPress={guardarEvento}
-        disabled={guardando}
-      >
-        {guardando ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.buttonText}>
+    return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        >
+        <Text style={[styles.title, { color: C.text }]}>
             Crear evento
-          </Text>
+        </Text>
+
+        <Text style={[styles.subtitle, { color: C.muted }]}>
+            Completá la información para crear tu evento.
+        </Text>
+
+        {campo(
+            "Nombre del evento",
+            titulo,
+            setTitulo,
+            "Ej: Festival de Música"
         )}
-      </Pressable>
-    </ScrollView>
-  );
+
+        {campo(
+            "Descripción",
+            descripcion,
+            setDescripcion,
+            "Contá de qué se trata...",
+            { multiline: true }
+        )}
+
+        <View style={styles.field}>
+            <Text style={[styles.label, { color: C.text }]}>
+            Categoría
+            </Text>
+
+            <Pressable
+            onPress={() => setSelectorCategoriasVisible(true)}
+            disabled={cargandoCategorias || guardando}
+            style={[
+                styles.input,
+                {
+                backgroundColor: C.card,
+                borderColor: C.border || C.muted,
+                height: 48,
+                justifyContent: "center",
+                },
+            ]}
+            >
+            <Text style={{ color: categoriaId ? C.text : C.muted }}>
+                {cargandoCategorias
+                ? "Cargando categorías..."
+                : categorias.find(
+                    c => Number(c.id) === Number(categoriaId)
+                    )?.nombre || "Seleccioná una categoría"}
+            </Text>
+            </Pressable>
+        </View>
+
+        {campo(
+            "Fecha (DD/MM/AAAA)",
+            fecha,
+            setFecha,
+            "15/12/2026"
+        )}
+
+        {campo(
+            "Hora (HH:MM)",
+            hora,
+            setHora,
+            "20:00"
+        )}
+
+        <View style={[styles.notice, { backgroundColor: C.card }]}>
+            <Text style={[styles.noticeText, { color: C.muted }]}>
+            El evento se creará como borrador. Luego podrás
+            configurar sus entradas y publicarlo.
+            </Text>
+        </View>
+
+        <Pressable
+            style={[
+            styles.button,
+            {
+                backgroundColor: C.primary,
+                opacity: guardando ? 0.7 : 1,
+            },
+            ]}
+            onPress={guardarEvento}
+            disabled={guardando}
+        >
+            {guardando ? (
+            <ActivityIndicator color="#FFFFFF" />
+            ) : (
+            <Text style={styles.buttonText}>
+                Crear evento
+            </Text>
+            )}
+        </Pressable>
+        </ScrollView>
+
+        {/* Selector de categorías */}
+        <Modal
+        visible={selectorCategoriasVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectorCategoriasVisible(false)}
+        >
+        <View style={styles.overlay}>
+            <View style={[styles.listaCategorias, { backgroundColor: C.surface }]}>
+            <Text style={[styles.title, { color: C.text, marginBottom: 15 }]}>
+                Seleccionar categoría
+            </Text>
+
+            {cargandoCategorias ? (
+                <ActivityIndicator color={C.primary} />
+            ) : categorias.length === 0 ? (
+                <Text style={{ color: C.muted }}>
+                No hay categorías disponibles.
+                </Text>
+            ) : (
+                categorias.map(categoria => (
+                <Pressable
+                    key={categoria.id}
+                    onPress={() => {
+                    setCategoriaId(String(categoria.id));
+                    setSelectorCategoriasVisible(false);
+                    }}
+                    style={styles.opcionCategoria}
+                >
+                    <View>
+                    <Text style={{ color: C.text, fontWeight: "700" }}>
+                        {categoria.nombre}
+                    </Text>
+
+                    <Text style={{ color: C.muted, fontSize: 12 }}>
+                        {categoria.descripcion}
+                    </Text>
+                    </View>
+
+                    {Number(categoriaId) === Number(categoria.id) && (
+                    <Text style={{ color: C.primary }}>✓</Text>
+                    )}
+                </Pressable>
+                ))
+            )}
+
+            <Pressable
+                onPress={() => setSelectorCategoriasVisible(false)}
+                style={{ alignItems: "center", paddingTop: 15 }}
+            >
+                <Text style={{ color: C.primary, fontWeight: "700" }}>
+                Cerrar
+                </Text>
+            </Pressable>
+            </View>
+        </View>
+        </Modal>
+
+        {/* Confirmación de creación */}
+        <ConfirmacionModal
+        visible={modalVisible}
+        titulo={modalConfig.titulo}
+        mensaje={modalConfig.mensaje}
+        tipo={modalConfig.tipo}
+        textoBoton={modalConfig.textoBoton}
+        mostrarCancelar={modalConfig.mostrarCancelar}
+        textoCancelar="Cancelar"
+        onCancelar={() => setModalVisible(false)}
+        onAceptar={() => {
+            if (modalConfig.tipo === "warning") {
+            confirmarCreacion();
+            } else if (eventoPendiente) {
+            setModalVisible(false);
+            onCreated?.(eventoPendiente);
+            setEventoPendiente(null);
+            } else {
+            setModalVisible(false);
+            }
+        }}
+        />
+    </View>
+    );
+
 }
 
 const styles = StyleSheet.create({
@@ -350,6 +463,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
   },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    },
+    listaCategorias: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: 20,
+    padding: 20,
+    },
+    opcionCategoria: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#88888855",
+    },
 });
 
-}
+
+

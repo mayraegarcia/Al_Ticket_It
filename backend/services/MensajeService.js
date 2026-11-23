@@ -67,6 +67,7 @@ export class MensajeService {
     return compra;
   }
 
+  
   validarParticipante(compra, usuarioId) {
     const evento = this.eventoRepository.obtenerPorId(compra.eventoId);
 
@@ -76,15 +77,16 @@ export class MensajeService {
 
     const id = Number(usuarioId);
 
-    const esComprador = compra.compradorId === id;
-    const esOrganizador = evento.organizadorId === id;
+    const esComprador = Number(compra.compradorId) === id;
+    const esOrganizador = Number(evento.organizadorId) === id;
 
     if (!esComprador && !esOrganizador) {
-      throw new Error(
-        "El usuario no participa en esta compra"
-      );
+      throw new Error("El usuario no participa en esta compra");
     }
 
-    return esComprador ? evento.organizadorId : compra.compradorId;
+    return esComprador
+      ? evento.organizadorId
+      : compra.compradorId;
   }
+
 }

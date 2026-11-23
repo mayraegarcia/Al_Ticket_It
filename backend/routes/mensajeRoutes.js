@@ -19,10 +19,7 @@ mensajeRouter.post(
   "/compra/:compraId",
   authMiddleware,
   authorizeRole(RolUsuario.COMPRADOR, RolUsuario.ORGANIZADOR),
-  (req, res, next) => {
-    req.params.compraId = req.params.compraId;
-    mensajeController.enviar(req, res, next);
-  }
+  mensajeController.enviar
 );
 
 export default mensajeRouter;

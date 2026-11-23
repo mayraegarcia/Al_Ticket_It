@@ -34,7 +34,7 @@ export class ResenaService {
     return this.resenaRepository.buscarPorComprador(compradorId);
   }
 
-  crear(compradorId, eventoId, datos) {
+  crear(compradorId, datos) {
     const comprador = this.usuarioRepository.obtenerPorId(compradorId);
 
     if (!comprador) {
@@ -45,15 +45,24 @@ export class ResenaService {
       throw new Error("El usuario no tiene rol de comprador");
     }
 
+    const eventoId = Number(datos.eventoId);
+
     const evento = this.eventoRepository.obtenerPorId(eventoId);
 
     if (!evento) {
       throw new Error("Evento no encontrado");
     }
 
-    if (datos.puntuacion < 1 || datos.puntuacion > 5 ||
-        !Number.isInteger(datos.puntuacion)) {
+    if (
+      !Number.isInteger(datos.puntuacion) ||
+      datos.puntuacion < 1 ||
+      datos.puntuacion > 5
+    ) {
       throw new Error("La puntuación debe ser un entero entre 1 y 5");
+    }
+
+    if (!datos.detalle || !datos.detalle.trim()) {
+      throw new Error("El comentario es obligatorio");
     }
 
     const compras = this.compraRepository.buscarPorCompradorYEvento(
@@ -92,7 +101,7 @@ export class ResenaService {
       id: nuevoId,
       compradorId: comprador.id,
       eventoId: evento.id,
-      detalle: datos.detalle,
+      detalle: datos.detalle.trim(),
       puntuacion: datos.puntuacion,
       fecha: new Date()
     });

@@ -7,7 +7,7 @@ export class MensajeController {
 
   obtenerPorCompra = (req, res, next) => {
     try {
-      const mensajes = this.mensajeService.obtenerPorCompra(
+      const mensajes = this.mensajeService.obtenerConversacion(
         Number(req.params.compraId),
         req.user.id
       );

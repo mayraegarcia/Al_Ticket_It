@@ -66,16 +66,58 @@ export class CompraService {
     });
   }
 
-  buscarPorEvento(eventoId) {
+  buscarPorEvento(eventoId, organizadorId) {
     const evento = this.eventoRepository.obtenerPorId(eventoId);
 
     if (!evento) {
       throw new Error("Evento no encontrado");
     }
 
-    return this.compraRepository.buscarPorEvento(eventoId);
-  }
+    const organizador = this.usuarioRepository.obtenerPorId(organizadorId);
 
+    if (!organizador) {
+      throw new Error("Organizador no encontrado");
+    }
+
+    if (!organizador.roles.includes(RolUsuario.ORGANIZADOR)) {
+      throw new Error("El usuario no tiene rol de organizador");
+    }
+
+    if (Number(evento.organizadorId) !== Number(organizadorId)) {
+      throw new Error("No tenés permiso para consultar las ventas de este evento");
+    }
+
+    const compras = this.compraRepository.buscarPorEvento(eventoId);
+
+    return compras.map((compra) => {
+      const comprador = this.usuarioRepository.obtenerPorId(
+        compra.compradorId
+      );
+
+      return {
+        ...compra,
+
+        comprador: comprador
+          ? {
+              nombre: comprador.nombre,
+              apellido: comprador.apellido,
+              email: comprador.email,
+            }
+          : null,
+
+        detalles: compra.detalles.map((detalle) => {
+          const tipoEntrada = evento.tiposEntrada.find(
+            (tipo) => Number(tipo.id) === Number(detalle.tipoEntradaId)
+          );
+
+          return {
+            ...detalle,
+            tipoEntrada: tipoEntrada?.nombre || "Tipo de entrada no disponible",
+          };
+        }),
+      };
+    });
+  }
   // ==============================
   // CREAR COMPRA
   // ==============================

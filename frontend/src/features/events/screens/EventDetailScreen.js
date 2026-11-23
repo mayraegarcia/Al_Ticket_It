@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ScrollView,
   View,
@@ -13,11 +13,20 @@ import { useTheme } from "../../../theme/ThemeContext";
 import Ticketito from "../../../components/mascot/Ticketito";
 import { compraService } from "../../../service/compraService";
 import ConfirmacionModal from "../../../components/ui/ConfirmacionModal";
+import { useAuth } from "../../../context/authContext";
+import { favoritoService } from "../../../service/favoritosService";
+
 
 export default function EventDetailScreen({ event, onBack }) {
     const { C } = useTheme();
 
     const [cantidades, setCantidades] = useState({});
+
+    const { usuario } = useAuth();
+
+    const [esFavorito, setEsFavorito] = useState(false);
+    const [cargandoFavorito, setCargandoFavorito] = useState(false);
+    const [procesandoFavorito, setProcesandoFavorito] = useState(false);
 
     const [comprando, setComprando] = useState(false);
     const [error, setError] = useState("");
@@ -25,6 +34,58 @@ export default function EventDetailScreen({ event, onBack }) {
     const [modalConfirmarCompra, setModalConfirmarCompra] = useState(false);
     const [modalCompraVisible, setModalCompraVisible] = useState(false);
     const [compraRealizada, setCompraRealizada] = useState(null);
+
+    useEffect(() => {
+        if (!event?.id || !usuario?.id) return;
+
+        const consultarFavorito = async () => {
+            try {
+                setCargandoFavorito(true);
+
+                const favoritos = await favoritoService.obtenerMisFavoritos();
+
+                const encontrado = favoritos.some((favorito) => {
+                    const eventoFavorito = favorito.evento || favorito;
+
+                    return Number(eventoFavorito.id ?? favorito.eventoId) ===
+                        Number(event.id);
+                });
+
+                setEsFavorito(encontrado);
+            } catch (err) {
+                console.error("Error al consultar favorito:", err);
+            } finally {
+                setCargandoFavorito(false);
+            }
+        };
+
+        consultarFavorito();
+    }, [event?.id, usuario?.id]);
+
+    async function alternarFavorito() {
+        if (!event?.id || procesandoFavorito) return;
+
+        try {
+            setProcesandoFavorito(true);
+            setError("");
+
+            if (esFavorito) {
+                await favoritoService.eliminar(event.id);
+                setEsFavorito(false);
+            } else {
+                await favoritoService.agregar(event.id);
+                setEsFavorito(true);
+            }
+        } catch (err) {
+            console.error("Error al modificar favorito:", err);
+
+            setError(
+                err.message || "No se pudo actualizar el favorito."
+            );
+        } finally {
+            setProcesandoFavorito(false);
+        }
+    }
 
 
     if (!event) return null;
@@ -227,6 +288,38 @@ export default function EventDetailScreen({ event, onBack }) {
         <Pressable onPress={onBack} style={styles.back}>
             <Text style={{ color: C.primary, fontWeight: "700" }}>
             ← Volver a explorar
+            </Text>
+        </Pressable>
+
+        <Pressable
+            onPress={alternarFavorito}
+            disabled={cargandoFavorito || procesandoFavorito}
+            style={[
+                styles.favoritoButton,
+                {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    opacity: cargandoFavorito || procesandoFavorito ? 0.5 : 1,
+                },
+            ]}
+        >
+            <Text
+                style={[
+                    styles.favoritoIcono,
+                    { color: esFavorito ? "#E5484D" : C.muted },
+                ]}
+            >
+                {esFavorito ? "♥" : "♡"}
+            </Text>
+
+            <Text style={[styles.favoritoTexto, { color: C.text }]}>
+                {cargandoFavorito
+                    ? "Consultando..."
+                    : procesandoFavorito
+                    ? "Actualizando..."
+                    : esFavorito
+                    ? "Guardado en favoritos"
+                    : "Agregar a favoritos"}
             </Text>
         </Pressable>
 
@@ -594,4 +687,23 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginTop: 15,
   },
+  favoritoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+},
+
+favoritoIcono: {
+    fontSize: 25,
+},
+
+favoritoTexto: {
+    fontSize: 15,
+    fontWeight: "700",
+},
 });

@@ -9,6 +9,7 @@ import compraRouter from "./compraRoutes.js";
 import cambioEstadoCompraRouter from "./cambioEstadoCompraRoutes.js";
 import mensajeRouter from "./mensajeRoutes.js";
 import resenaRouter from "./reseñaRoutes.js";
+import favoritosRouter from "./favoritosRoutes.js";
 
 const apiRouter = Router();
 
@@ -38,5 +39,7 @@ apiRouter.use("/mensajes", mensajeRouter);
 
 // Reseñas
 apiRouter.use("/resenas", resenaRouter);
+
+apiRouter.use("/favoritos", favoritosRouter);
 
 export default apiRouter;

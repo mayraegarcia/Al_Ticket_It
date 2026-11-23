@@ -15,10 +15,12 @@ import Ticketito from "../../../components/mascot/Ticketito";
 import { compraService } from "../../../service/compraService";
 import { eventoService } from "../../../service/eventoService";
 import TicketDigital from "../../../components/events/TicketDigital";
+import CalificarEventoScreen from "../../shared/CalificarEventScreen";
 
+import Chat from "../../shared/Chat";
 import ConfirmacionModal from "../../../components/ui/ConfirmacionModal";
 
-export default function MyTicketsScreen() {
+export default function MyTicketsScreen({usuario}) {
     const { C } = useTheme();
 
     const [compras, setCompras] = useState([]);
@@ -33,6 +35,11 @@ export default function MyTicketsScreen() {
 
     const [ticketVisible, setTicketVisible] = useState(false);
     const [ticketSeleccionado, setTicketSeleccionado] = useState(null);
+
+    const [chatCompra, setChatCompra] = useState(null);
+
+    const [eventoParaCalificar, setEventoParaCalificar] = useState(null);
+    const [resenasHechas, setResenasHechas] = useState([]);
 
   useEffect(() => {
     cargarCompras();
@@ -203,6 +210,31 @@ export default function MyTicketsScreen() {
   // ==============================
   // LOADING
   // ==============================
+    if (eventoParaCalificar) {
+      return (
+        <CalificarEventoScreen
+          evento={eventoParaCalificar}
+          onBack={() => setEventoParaCalificar(null)}
+          onCreated={() => {
+            setResenasHechas((prev) => [
+              ...prev,
+              eventoParaCalificar.id,
+            ]);
+
+            setEventoParaCalificar(null);
+          }}
+        />
+      );
+    }
+  if (chatCompra) {
+    return (
+      <Chat
+        compraId={chatCompra.id}
+        usuario={usuario}
+        onBack={() => setChatCompra(null)}
+      />
+    );
+  }
 
   if (cargando) {
     return (
@@ -473,6 +505,51 @@ export default function MyTicketsScreen() {
                 </Pressable>
                 )}
 
+
+                {/* MENSAJES */}
+
+                <Pressable
+                  onPress={() => setChatCompra(compra)}
+                  style={[
+                    styles.botonMensajes,
+                    {
+                      backgroundColor: C.surface2,
+                      borderColor: C.primary,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: C.primary, fontWeight: "800" }}>
+                    💬 Mensajes con el organizador
+                  </Text>
+                </Pressable>
+
+                {compra.estado === "UTILIZADA" &&
+                  !resenasHechas.includes(Number(compra.eventoId)) && (
+                    <Pressable
+                      onPress={() => {
+                        const evento = eventos[compra.eventoId];
+
+                        setEventoParaCalificar({
+                          ...evento,
+                          id: Number(compra.eventoId),
+                          nombre:
+                            evento?.nombre ||
+                            evento?.titulo ||
+                            `Evento #${compra.eventoId}`,
+                        });
+                      }}
+                      style={[
+                        styles.botonResena,
+                        { backgroundColor: C.primary },
+                      ]}
+                    >
+                      <Text style={styles.botonResenaTexto}>
+                        ★ Calificar evento
+                      </Text>
+                    </Pressable>
+                  )}
+
+
               {/* CANCELAR */}
 
               {puedeCancelar(compra, evento) ? (
@@ -736,5 +813,24 @@ botonTicket: {
   alignItems: "center",
   justifyContent: "center",
   marginTop: 12,
+},
+
+botonMensajes: {
+  padding: 14,
+  borderRadius: 12,
+  borderWidth: 1,
+  alignItems: "center",
+  marginTop: 12,
+},
+botonResena: {
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  marginTop: 12,
+},
+
+botonResenaTexto: {
+  color: "#fff",
+  fontWeight: "900",
 },
 });

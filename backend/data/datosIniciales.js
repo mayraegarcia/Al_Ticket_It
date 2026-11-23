@@ -6,6 +6,7 @@ export const compras = [];
 export const cambiosEstadoCompra = [];
 export const resenas = [];
 export const mensajes = [];
+export const favoritos = [];
 
 
 

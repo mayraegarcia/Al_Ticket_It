@@ -21,8 +21,11 @@ import PlaceholderScreen from "../../features/shared/PlaceholderScreen";
 import OrganizerHomeScreen from "../../features/organizer/OrganizerHomeScreen";
 import MyEventsScreen from "../../features/organizer/MyEventsScreen";
 import CreateEventScreen from "../../features/organizer/CreateEventScreen";
+import ManageTicketTypesScreen from "../../features/organizer/ManageTicketTypeScreen";
+import EventSalesScreen from "../../features/organizer/EventSalesScreen";
 
 import ProfileScreen from "../../features/shared/ProfileScreen";
+import MisFavoritosScreen from "../../features/shared/MyFavouritsScreen";
 
 import AuthScreen from "../../features/auth/authScreen";
 import { useAuth } from "../../context/authContext";
@@ -38,12 +41,16 @@ const tabsOrganizador = [
   { name: "Inicio", icon: "⌂" },
   { name: "Mis eventos", icon: "▣" },
   { name: "Crear", icon: "+" },
+  { name: "Configurar entradas", icon: "⚙" },
   { name: "Perfil", icon: "◉" },
 ];
 
 export default function AppShell() {
   const { C, dark } = useTheme();
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
+  const [eventoParaConfigurar, setEventoParaConfigurar] = useState(null);
+  const [eventoParaVentas, setEventoParaVentas] = useState(null);
+  const [viendoFavoritos, setViendoFavoritos] = useState(false);
 
   const {
     usuario,
@@ -64,6 +71,9 @@ export default function AppShell() {
   useEffect(() => {
     setTab(esOrganizador ? "Inicio" : "Explorar");
     setEventoSeleccionado(null);
+    setEventoParaConfigurar(null);
+    setEventoParaVentas(null);
+    setViendoFavoritos(false);
   }, [usuario?.id, esOrganizador]);
 
   if (cargando) {
@@ -123,18 +133,71 @@ export default function AppShell() {
       <View style={{ flex: 1 }}>
         {esOrganizador ? (
           tab === "Inicio" ? (
-            <OrganizerHomeScreen
-              onNavigate={setTab}
-            />
+            <OrganizerHomeScreen onNavigate={setTab} />
           ) : tab === "Mis eventos" ? (
-            <MyEventsScreen />
+            <MyEventsScreen
+              onConfigurar={(evento) => {
+                setEventoParaConfigurar(evento);
+                setTab("Configurar entradas");
+              }}
+              onVerVentas={(evento) => {
+                setEventoParaVentas(evento);
+                setTab("Ventas del evento");
+              }}
+            />
+          ) : tab === "Ventas del evento" ? (
+            <EventSalesScreen
+              evento={eventoParaVentas}
+              usuario={usuario}
+              onBack={() => {
+                setEventoParaVentas(null);
+                setTab("Mis eventos");
+              }}
+            />
           ) : tab === "Crear" ? (
             <CreateEventScreen
-              onCreated={() => setTab("Mis eventos")}
+              onCreated={(evento) => {
+                setEventoParaConfigurar(evento);
+                setTab("Configurar entradas");
+              }}
             />
+          ) : tab === "Configurar entradas" ? (
+            eventoParaConfigurar ? (
+              <ManageTicketTypesScreen
+                evento={eventoParaConfigurar}
+                onBack={() => {
+                  setEventoParaConfigurar(null);
+                  setTab("Mis eventos");
+                }}
+                onPublished={() => {
+                  setEventoParaConfigurar(null);
+                  setTab("Mis eventos");
+                }}
+              />
+            ) : (
+              <MyEventsScreen
+                onConfigurar={(evento) => {
+                  setEventoParaConfigurar(evento);
+                  setTab("Configurar entradas");
+                }}
+                onVerVentas={(evento) => {
+                  setEventoParaVentas(evento);
+                  setTab("Ventas del evento");
+                }}
+              />
+            )
           ) : (
             <ProfileScreen />
           )
+        ) : viendoFavoritos ? (
+          <MisFavoritosScreen
+            onBack={() => setViendoFavoritos(false)}
+            onVerEvento={(evento) => {
+              setViendoFavoritos(false);
+              setTab("Explorar");
+              setEventoSeleccionado(evento);
+            }}
+          />
         ) : (
           tab === "Explorar" ? (
             eventoSeleccionado ? (
@@ -143,14 +206,14 @@ export default function AppShell() {
                 onBack={() => setEventoSeleccionado(null)}
               />
             ) : (
-              <HomeScreen
-                onEventPress={setEventoSeleccionado}
-              />
+              <HomeScreen onEventPress={setEventoSeleccionado} />
             )
           ) : tab === "Mis entradas" ? (
-            <MyTicketsScreen />
+            <MyTicketsScreen usuario={usuario} />
           ) : (
-            <ProfileScreen />
+            <ProfileScreen
+              onVerFavoritos={() => setViendoFavoritos(true)}
+            />
           )
         )}
       </View>
@@ -164,7 +227,10 @@ export default function AppShell() {
           return (
             <Pressable
               key={item.name}
-              onPress={() => setTab(item.name)}
+              onPress={() => {
+                setViendoFavoritos(false);
+                setTab(item.name);
+              }}
               style={s.navItem}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}

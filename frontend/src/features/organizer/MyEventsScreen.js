@@ -13,7 +13,10 @@ import { useTheme } from "../../theme/ThemeContext";
 import { eventoService } from "../../service/eventoService";
 import { mensajeDeError } from "../../service/api";
 
-export default function MyEventsScreen() {
+export default function MyEventsScreen({
+  onConfigurar,
+  onVerVentas,
+}) {
   const { C } = useTheme();
 
   const [eventos, setEventos] = useState([]);
@@ -164,6 +167,35 @@ export default function MyEventsScreen() {
               <Text style={[styles.info, { color: C.muted }]}>
                 Tipos de entrada: {evento.tiposEntrada?.length ?? 0}
               </Text>
+
+              <Pressable
+                onPress={() => onConfigurar?.(evento)}
+                style={[
+                    styles.configButton,
+                    { backgroundColor: C.primary },
+                ]}
+                >
+                <Text style={styles.configButtonText}>
+                    {evento.estado === "BORRADOR"
+                    ? "Configurar entradas"
+                    : "Administrar entradas"}
+                </Text>
+                </Pressable>
+
+                <Pressable
+                onPress={() => onVerVentas?.(evento)}
+                style={[
+                    styles.salesButton,
+                    {
+                    backgroundColor: C.surface,
+                    borderColor: C.primary,
+                    },
+                ]}
+                >
+                <Text style={[styles.salesButtonText, { color: C.primary }]}>
+                    Ver ventas
+                </Text>
+                </Pressable>
             </View>
           ))}
         </>
@@ -256,4 +288,28 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "700",
   },
+  configButton: {
+  padding: 12,
+  borderRadius: 10,
+  alignItems: "center",
+  marginTop: 8,
+},
+
+configButtonText: {
+  color: "#FFFFFF",
+  fontWeight: "700",
+  fontSize: 13,
+},
+salesButton: {
+  padding: 12,
+  borderRadius: 10,
+  alignItems: "center",
+  marginTop: 8,
+  borderWidth: 1,
+},
+
+salesButtonText: {
+  fontWeight: "700",
+  fontSize: 13,
+},
 });
