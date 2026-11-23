@@ -6,6 +6,18 @@ import { notFound } from "./middlewares/notFound.js";
 
 const app = express();
 
+app.use((req, res, next) => {
+  console.log("==================================");
+  console.log("📥 SOLICITUD RECIBIDA");
+  console.log("Método:", req.method);
+  console.log("URL:", req.originalUrl);
+  console.log("IP cliente:", req.ip);
+  console.log("Fecha:", new Date().toLocaleString());
+  console.log("==================================");
+
+  next();
+});
+
 // Middlewares generales
 app.use(cors());
 app.use(express.json());

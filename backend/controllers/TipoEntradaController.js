@@ -7,11 +7,11 @@ export class TipoEntradaController {
 
   obtenerPorEvento = (req, res, next) => {
     try {
-      const tipos = this.tipoEntradaService.obtenerEvento(
+      const evento = this.tipoEntradaService.obtenerEvento(
         Number(req.params.eventoId)
       );
 
-      res.status(200).json(tipos);
+      res.status(200).json(evento.tiposEntrada);
     } catch (error) {
       next(error);
     }

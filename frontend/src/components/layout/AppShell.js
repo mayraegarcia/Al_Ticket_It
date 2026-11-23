@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -13,19 +13,87 @@ import { useTheme } from "../../theme/ThemeContext";
 import Ticketito from "../mascot/Ticketito";
 import ThemeToggle from "../ui/ThemeToggle";
 
+import MyTicketsScreen from "../../features/events/screens/MyTicketsScreen";
+import EventDetailScreen from "../../features/events/screens/EventDetailScreen";
 import HomeScreen from "../../features/events/screens/HomeScreen";
 import PlaceholderScreen from "../../features/shared/PlaceholderScreen";
 
-const tabs = [
+import OrganizerHomeScreen from "../../features/organizer/OrganizerHomeScreen";
+import MyEventsScreen from "../../features/organizer/MyEventsScreen";
+import CreateEventScreen from "../../features/organizer/CreateEventScreen";
+
+import ProfileScreen from "../../features/shared/ProfileScreen";
+
+import AuthScreen from "../../features/auth/authScreen";
+import { useAuth } from "../../context/authContext";
+
+
+const tabsComprador = [
   { name: "Explorar", icon: "⌕" },
   { name: "Mis entradas", icon: "▣" },
-  { name: "Organizar", icon: "✦" },
+  { name: "Perfil", icon: "◉" },
+];
+
+const tabsOrganizador = [
+  { name: "Inicio", icon: "⌂" },
+  { name: "Mis eventos", icon: "▣" },
+  { name: "Crear", icon: "+" },
   { name: "Perfil", icon: "◉" },
 ];
 
 export default function AppShell() {
-  const [tab, setTab] = useState("Explorar");
   const { C, dark } = useTheme();
+  const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
+
+  const {
+    usuario,
+    autenticado,
+    cargando,
+    establecerSesion,
+    cerrarSesion,
+  } = useAuth();
+
+  const esOrganizador = usuario?.rol === "ORGANIZADOR";
+
+  const tabs = esOrganizador
+  ? tabsOrganizador
+  : tabsComprador;
+
+  const [tab, setTab] = useState("Explorar");
+
+  useEffect(() => {
+    setTab(esOrganizador ? "Inicio" : "Explorar");
+    setEventoSeleccionado(null);
+  }, [usuario?.id, esOrganizador]);
+
+  if (cargando) {
+    return (
+      <SafeAreaView
+        style={[
+          s.safe,
+          {
+            backgroundColor: C.bg,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        <Ticketito size={100} />
+
+        <Text style={{ color: C.muted, marginTop: 15 }}>
+          Preparando Ticketito...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!autenticado) {
+    return (
+      <AuthScreen
+        onAuthenticated={establecerSesion}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: C.bg }]}>
@@ -36,21 +104,57 @@ export default function AppShell() {
         <View style={s.brand}>
           <Ticketito size={42} />
           <Text style={[s.brandText, { color: C.text }]}>
-            ticketito
+            Al Ticket It
           </Text>
         </View>
 
-        <ThemeToggle />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <ThemeToggle />
+
+          <Pressable onPress={cerrarSesion}>
+            <Text style={{ color: C.primary, fontWeight: "800" }}>
+              Salir
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Contenido principal */}
-      <View style={s.content}>
-        {tab === "Explorar" ? (
-          <HomeScreen />
+      <View style={{ flex: 1 }}>
+        {esOrganizador ? (
+          tab === "Inicio" ? (
+            <OrganizerHomeScreen
+              onNavigate={setTab}
+            />
+          ) : tab === "Mis eventos" ? (
+            <MyEventsScreen />
+          ) : tab === "Crear" ? (
+            <CreateEventScreen
+              onCreated={() => setTab("Mis eventos")}
+            />
+          ) : (
+            <ProfileScreen />
+          )
         ) : (
-          <PlaceholderScreen title={tab} />
+          tab === "Explorar" ? (
+            eventoSeleccionado ? (
+              <EventDetailScreen
+                event={eventoSeleccionado}
+                onBack={() => setEventoSeleccionado(null)}
+              />
+            ) : (
+              <HomeScreen
+                onEventPress={setEventoSeleccionado}
+              />
+            )
+          ) : tab === "Mis entradas" ? (
+            <MyTicketsScreen />
+          ) : (
+            <ProfileScreen />
+          )
         )}
       </View>
+
 
       {/* Navegación inferior */}
       <View style={[s.nav, { backgroundColor: C.nav, borderColor: C.border }]}>
