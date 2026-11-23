@@ -153,13 +153,7 @@ export default function HomeScreen({ onEventPress }) {
   }
 
   function obtenerPuntaje(evento) {
-    return Number(
-      evento.puntajePromedio ??
-      evento.promedioPuntaje ??
-      evento.puntaje ??
-      evento.calificacion ??
-      0
-    );
+    return Number(evento.puntajeOrganizador) || 0;
   }
 
   function nombreCategoria(categoria) {

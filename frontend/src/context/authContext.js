@@ -32,11 +32,13 @@ export function AuthProvider({ children }) {
 
   async function restaurarSesion() {
     try {
-      const [tokenGuardado, usuarioGuardado] =
-        await AsyncStorage.multiGet([TOKEN_KEY, USER_KEY]);
+      const datosGuardados = await AsyncStorage.multiGet([
+        TOKEN_KEY,
+        USER_KEY,
+      ]);
 
-      const tokenActual = tokenGuardado?.[1];
-      const usuarioJson = usuarioGuardado?.[1];
+      const tokenActual = datosGuardados[0]?.[1];
+      const usuarioJson = datosGuardados[1]?.[1];
 
       if (!tokenActual || !usuarioJson) {
         setUsuario(null);

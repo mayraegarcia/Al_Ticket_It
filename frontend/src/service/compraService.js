@@ -17,6 +17,10 @@ export const compraService = {
     return await api.post("/compras", datosCompra);
   },
 
+  confirmarPago: async (id) => {
+    return api.patch(`/compras/${id}/pagar`);
+  },
+
   cancelar: async (id) => {
     return await api.patch(`/compras/${id}/cancelar`);
   },

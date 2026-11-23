@@ -138,7 +138,7 @@ export default function AuthScreen({ onAuthenticated }) {
             <Ticketito size={100} />
 
             <Text style={[s.logo, { color: C.text }]}>
-            ticketito
+            Al Ticket It
             </Text>
 
             <Text style={[s.descripcion, { color: C.muted }]}>

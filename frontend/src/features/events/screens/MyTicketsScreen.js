@@ -115,6 +115,21 @@ export default function MyTicketsScreen({usuario}) {
     }
   }
 
+  const pagarCompra = async (compra) => {
+    try {
+      setCancelandoId(compra.id);
+
+      await compraService.confirmarPago(compra.id);
+
+      await cargarCompras();
+    } catch (error) {
+      console.error("Error al confirmar el pago:", error);
+      setError("No se pudo confirmar el pago");
+    } finally {
+      setCancelandoId(null);
+    }
+  };
+
   // ==============================
   // HELPERS
   // ==============================
@@ -147,6 +162,8 @@ export default function MyTicketsScreen({usuario}) {
       case "REEMBOLSADA":
       case "CANCELADA":
         return "#D65A55";
+      case "PENDIENTE DE PAGO":
+        return "#D97706";
       default:
         return C.primary;
     }
@@ -163,23 +180,36 @@ export default function MyTicketsScreen({usuario}) {
   function clasificarCompra(compra) {
     const evento = eventos[compra.eventoId];
     const fechaEvento = evento?.fecha || evento?.fechaEvento;
-    const eventoPasado = fechaEvento
-        ? new Date(fechaEvento) < new Date()
-        : false;
 
-    if (
-        compra.estado === "CANCELADA" ||
-        compra.estado === "REEMBOLSADA"
-    ) {
-        return "CANCELADAS";
+    const eventoPasado = fechaEvento
+      ? new Date(fechaEvento) < new Date()
+      : false;
+
+    // Pendiente de pago, independientemente de la fecha
+    if (compra.estado === "PENDIENTE DE PAGO") {
+      return "PENDIENTES";
     }
 
+    // Compras canceladas o reembolsadas
+    if (
+      compra.estado === "CANCELADA" ||
+      compra.estado === "REEMBOLSADA"
+    ) {
+      return "CANCELADAS";
+    }
+
+    // Entradas utilizadas o eventos que ya pasaron
     if (compra.estado === "UTILIZADA" || eventoPasado) {
-        return "PASADAS";
+      return "PASADAS";
+    }
+
+    // Compras confirmadas que aún no pasaron
+    if (compra.estado === "CONFIRMADA") {
+      return "PROXIMAS";
     }
 
     return "PROXIMAS";
-    }
+  }
 
     const cantidadProximas = compras.filter(
     (compra) => clasificarCompra(compra) === "PROXIMAS"
@@ -191,6 +221,10 @@ export default function MyTicketsScreen({usuario}) {
 
     const cantidadCanceladas = compras.filter(
     (compra) => clasificarCompra(compra) === "CANCELADAS"
+    ).length;
+
+    const cantidadPendientes = compras.filter(
+      (compra) => clasificarCompra(compra) === "PENDIENTES"
     ).length;
 
     const comprasFiltradas = compras.filter(
@@ -274,6 +308,16 @@ export default function MyTicketsScreen({usuario}) {
             </View>
 
             <View style={[styles.contador, { backgroundColor: C.surface2 }]}>
+              <Text style={[styles.contadorNumero, { color: "#D97706" }]}>
+                {cantidadPendientes}
+              </Text>
+
+              <Text style={[styles.contadorLabel, { color: C.muted }]}>
+                Pendientes
+              </Text>
+            </View>
+
+            <View style={[styles.contador, { backgroundColor: C.surface2 }]}>
             <Text style={[styles.contadorNumero, { color: C.text }]}>
                 {cantidadPasadas}
             </Text>
@@ -302,9 +346,10 @@ export default function MyTicketsScreen({usuario}) {
       <View style={styles.filtros}>
         {[
             { id: "PROXIMAS", label: "Próximas" },
+            { id: "PENDIENTES", label: "Pendientes" },
             { id: "PASADAS", label: "Pasadas" },
             { id: "CANCELADAS", label: "Canceladas" },
-        ].map((opcion) => {
+          ].map((opcion) => {
             const activo = filtro === opcion.id;
 
             return (
@@ -344,6 +389,8 @@ export default function MyTicketsScreen({usuario}) {
                 ? "Todavía no tenés entradas"
                 : filtro === "PROXIMAS"
                 ? "No tenés eventos próximos"
+                : filtro === "PENDIENTES"
+                ? "No tenés compras pendientes de pago"
                 : filtro === "PASADAS"
                 ? "Todavía no asististe a ningún evento"
                 : "No tenés compras canceladas"}
@@ -483,7 +530,13 @@ export default function MyTicketsScreen({usuario}) {
                 ]}
               >
                 <Text style={[styles.totalLabel, { color: C.text }]}>
-                  Total pagado
+                  {compra.estado === "PENDIENTE DE PAGO"
+                    ? "Total a pagar"
+                    : compra.estado === "REEMBOLSADA"
+                    ? "Total reembolsado"
+                    : compra.estado === "CANCELADA"
+                    ? "Total de compra"
+                    : "Total pagado"}
                 </Text>
 
                 <Text style={[styles.total, { color: C.primary }]}>
@@ -503,6 +556,31 @@ export default function MyTicketsScreen({usuario}) {
                     🎟️ Ver ticket
                     </Text>
                 </Pressable>
+                )}
+
+                {/* Pagar */}
+                {compra.estado === "PENDIENTE DE PAGO" && (
+                  <Pressable
+                    disabled={cancelandoId === compra.id}
+                    onPress={() => pagarCompra(compra)}
+                    style={{
+                      backgroundColor: "#D97706",
+                      opacity: cancelandoId === compra.id ? 0.5 : 1,
+                      padding: 12,
+                      borderRadius: 10,
+                      marginTop: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontWeight: "bold",
+                        textAlign: "center",
+                      }}
+                    >
+                      {cancelandoId === compra.id ? "Procesando..." : "Pagar"}
+                    </Text>
+                  </Pressable>
                 )}
 
 

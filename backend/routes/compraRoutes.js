@@ -41,6 +41,14 @@ compraRouter.post(
   compraController.crear
 );
 
+// Confirmar pago simulado
+compraRouter.patch(
+  "/:id/pagar",
+  authMiddleware,
+  authorizeRole(RolUsuario.COMPRADOR),
+  compraController.confirmarPago
+);
+
 // Cancelar compra
 compraRouter.patch(
   "/:id/cancelar",

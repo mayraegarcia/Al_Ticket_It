@@ -12,6 +12,7 @@ import {
 import { useTheme } from "../../theme/ThemeContext";
 import { compraService } from "../../service/compraService";
 import { mensajeDeError } from "../../service/api";
+import ConfirmacionModal from "../../components/ui/ConfirmacionModal";
 import Chat from "../../features/shared/Chat";
 
 export default function EventSalesScreen({ evento, onBack, usuario }) {
@@ -21,7 +22,47 @@ export default function EventSalesScreen({ evento, onBack, usuario }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [chatCompra, setChatCompra] = useState(null);
+  const [utilizandoId, setUtilizandoId] = useState(null);
 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    titulo: "",
+    mensaje: "",
+    tipo: "info",
+    textoBoton: "Aceptar",
+    mostrarCancelar: false,
+  });
+
+  const mostrarMensaje = ({
+    titulo,
+    mensaje,
+    tipo = "error",
+    textoBoton = "Aceptar",
+  }) => {
+    setModalConfig({
+      titulo,
+      mensaje,
+      tipo,
+      textoBoton,
+      mostrarCancelar: false,
+    });
+
+    setModalVisible(true);
+  };
+
+
+  const confirmarUsoEntrada = (compraId) => {
+    setModalConfig({
+      titulo: "¿Validar entrada?",
+      mensaje: "¿Estás seguro de que querés marcar esta entrada como utilizada? Esta acción no se puede deshacer.",
+      tipo: "warning",
+      textoBoton: "Confirmar",
+      mostrarCancelar: true,
+      accion: () => marcarComoUtilizada(compraId),
+    });
+
+    setModalVisible(true);
+  };
   useEffect(() => {
     if (evento?.id) {
       cargarVentas();
@@ -43,6 +84,24 @@ export default function EventSalesScreen({ evento, onBack, usuario }) {
       setError(mensajeDeError(err));
     } finally {
       setCargando(false);
+    }
+  }
+
+  async function marcarComoUtilizada(compraId) {
+    try {
+      setUtilizandoId(compraId);
+
+      await compraService.marcarUtilizada(compraId);
+
+      await cargarVentas();
+    } catch (err) {
+      mostrarMensaje({
+        titulo: "No se pudo validar la entrada",
+        mensaje: mensajeDeError(err),
+        tipo: "error",
+      });
+    } finally {
+      setUtilizandoId(null);
     }
   }
 
@@ -328,9 +387,48 @@ export default function EventSalesScreen({ evento, onBack, usuario }) {
             </Text>
             </Pressable>
 
+
+            {compra.estado === "CONFIRMADA" && (
+              <Pressable
+                disabled={utilizandoId === compra.id}
+                onPress={() => confirmarUsoEntrada(compra.id)}
+                style={{
+                  marginTop: 10,
+                  padding: 14,
+                  borderRadius: 12,
+                  backgroundColor: "#2563EB",
+                  alignItems: "center",
+                  opacity: utilizandoId === compra.id ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: "#FFFFFF", fontWeight: "800" }}>
+                  {utilizandoId === compra.id
+                    ? "Validando entrada..."
+                    : "✓ Marcar como utilizada"}
+                </Text>
+              </Pressable>
+            )}
+
           </View>
         ))
       )}
+         <ConfirmacionModal
+            visible={modalVisible}
+            titulo={modalConfig.titulo}
+            mensaje={modalConfig.mensaje}
+            tipo={modalConfig.tipo}
+            textoBoton={modalConfig.textoBoton}
+            mostrarCancelar={modalConfig.mostrarCancelar}
+            textoCancelar="Cancelar"
+            onCancelar={() => setModalVisible(false)}
+            onAceptar={() => {
+              setModalVisible(false);
+
+              if (modalConfig.accion) {
+                modalConfig.accion();
+              }
+            }}
+          />
     </ScrollView>
   );
 }

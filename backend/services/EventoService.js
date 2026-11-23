@@ -22,9 +22,11 @@ export class EventoService {
   // ==============================
 
   obtenerTodos() {
-    return this.eventoRepository.buscarPorEstado(
+    const eventos = this.eventoRepository.buscarPorEstado(
       EstadoEvento.PUBLICADO
     );
+
+    return this.agregarPuntajeOrganizador(eventos);
   }
 
   obtenerPorId(id) {
@@ -48,27 +50,25 @@ export class EventoService {
       estado: EstadoEvento.PUBLICADO
     });
 
+    const eventosConPuntaje = this.agregarPuntajeOrganizador(
+      eventosEncontrados
+    );
+
     if (orden === "fecha") {
-      return this.eventoRepository.ordenarPorFecha(eventosEncontrados);
+      return this.eventoRepository.ordenarPorFecha(eventosConPuntaje);
     }
 
     if (orden === "precio") {
-      return this.eventoRepository.ordenarPorPrecio(eventosEncontrados);
+      return this.eventoRepository.ordenarPorPrecio(eventosConPuntaje);
     }
 
     if (orden === "puntaje") {
-      return eventosEncontrados
-        .map(evento => ({
-          evento,
-          puntaje: this.resenaService.obtenerPuntuacionPromedioPorOrganizador(
-            evento.organizadorId
-          )
-        }))
-        .sort((a, b) => b.puntaje - a.puntaje)
-        .map(resultado => resultado.evento);
+      return eventosConPuntaje.sort(
+        (a, b) => b.puntajeOrganizador - a.puntajeOrganizador
+      );
     }
 
-    return eventosEncontrados;
+    return eventosConPuntaje;
   }
 
   buscarPorOrganizador(organizadorId) {
@@ -272,5 +272,15 @@ export class EventoService {
     if (evento.organizadorId !== Number(organizadorId)) {
       throw new Error("El evento no pertenece a este organizador");
     }
+  }
+
+  agregarPuntajeOrganizador(eventos) {
+    return eventos.map(evento => ({
+      ...evento,
+      puntajeOrganizador:
+        this.resenaService.obtenerPuntuacionPromedioPorOrganizador(
+          evento.organizadorId
+        )
+    }));
   }
 }

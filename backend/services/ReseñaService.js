@@ -5,6 +5,7 @@ import { EventoRepository } from "../repositories/EventoRepository.js";
 import { UsuarioRepository } from "../repositories/UsuarioRepository.js";
 import { Resena } from "../domain/Reseña.js";
 import { EstadoCompra } from "../domain/EstadoCompra.js";
+import { RolUsuario } from "../domain/RolUsuario.js";
 
 export class ResenaService {
   constructor() {

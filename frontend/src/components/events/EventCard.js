@@ -31,6 +31,9 @@ export default function EventCard({ event, onPress }) {
       ? event.categoria
       : "Evento");
 
+  const puntaje = Number(event.puntajeOrganizador) || 0;
+  const tienePuntaje = puntaje > 0;
+
   const tipos =
     event.tiposEntrada ||
     event.tiposEntradas ||
@@ -118,6 +121,23 @@ export default function EventCard({ event, onPress }) {
         >
           {lugar}
         </Text>
+
+        {/* Calificación del organizador */}
+        <View style={s.rating}>
+          <Text style={s.star}>★</Text>
+
+          <Text style={[s.ratingText, { color: C.text }]}>
+            {tienePuntaje
+              ? `${puntaje.toFixed(1)} / 5`
+              : "Sin calificaciones"}
+          </Text>
+
+          {tienePuntaje && (
+            <Text style={[s.ratingLabel, { color: C.muted }]}>
+              Calificación del organizador
+            </Text>
+          )}
+        </View>
 
         {/* Precio y botón */}
         <View style={s.bottom}>
@@ -240,5 +260,28 @@ const s = StyleSheet.create({
 
   btnText: {
     fontWeight: "700",
+  },
+
+  rating: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 9,
+    gap: 5,
+  },
+
+  star: {
+    color: "#E5A000",
+    fontSize: 17,
+    fontWeight: "900",
+  },
+
+  ratingText: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  ratingLabel: {
+    fontSize: 11,
+    marginLeft: 3,
   },
 });

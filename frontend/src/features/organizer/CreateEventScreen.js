@@ -53,17 +53,35 @@ export default function CreateEventScreen({ onCreated }) {
 
         setCategorias(Array.isArray(resultado) ? resultado : []);
         } catch (error) {
-        Alert.alert(
-            "Error",
-            "No se pudieron cargar las categorías."
-        );
-        } finally {
+          mostrarMensaje({
+            titulo: "Error",
+            mensaje: "No se pudieron cargar las categorías.",
+            tipo: "error",
+          });
+        }finally {
         setCargandoCategorias(false);
         }
     };
 
     cargarCategorias();
     }, []);
+
+    const mostrarMensaje = ({
+      titulo,
+      mensaje,
+      tipo = "error",
+      textoBoton = "Aceptar",
+    }) => {
+      setModalConfig({
+        titulo,
+        mensaje,
+        tipo,
+        textoBoton,
+        mostrarCancelar: false,
+      });
+
+      setModalVisible(true);
+    };
 
   const convertirFecha = () => {
     const partes = fecha.split("/");
@@ -84,7 +102,7 @@ export default function CreateEventScreen({ onCreated }) {
     }
 
     if (
-      anio < new Date().getFullYear()  ||
+      anio < new Date().getFullYear() ||
       mes < 1 || mes > 12 ||
       dia < 1 || dia > 31 ||
       horas < 0 || horas > 23 ||
@@ -112,86 +130,127 @@ export default function CreateEventScreen({ onCreated }) {
     return fechaObjeto;
   };
 
-
-    const confirmarCreacion = async () => {
+  const confirmarCreacion = async () => {
     try {
-        setModalVisible(false);
-        setGuardando(true);
+      setModalVisible(false);
+      setGuardando(true);
 
-        const fechaEvento = convertirFecha();
+      const fechaEvento = convertirFecha();
 
-        const nuevoEvento = {
+      if (!fechaEvento) {
+        mostrarMensaje({
+          titulo: "Fecha inválida",
+          mensaje: "Revisá la fecha y la hora del evento.",
+          tipo: "error",
+        });
+        return;
+      }
+
+      const nuevoEvento = {
         nombre: titulo.trim(),
         descripcion: descripcion.trim(),
         categoriaId: Number(categoriaId),
         fecha: fechaEvento.toISOString(),
-        };
+      };
 
-        const eventoCreado = await eventoService.crear(nuevoEvento);
+      const eventoCreado = await eventoService.crear(nuevoEvento);
 
-        setEventoPendiente(eventoCreado);
+      setEventoPendiente(eventoCreado);
 
-        setModalConfig({
+      setModalConfig({
         titulo: "¡Evento creado!",
-        mensaje: "Tu evento se creó correctamente. Ahora podés configurar sus tipos de entrada.",
+        mensaje:
+          "Tu evento se creó correctamente. Ahora podés configurar sus tipos de entrada.",
         tipo: "success",
         textoBoton: "Continuar",
         mostrarCancelar: false,
-        });
+      });
 
-        setModalVisible(true);
+      setModalVisible(true);
     } catch (error) {
-        setModalConfig({
+      mostrarMensaje({
         titulo: "Error",
         mensaje: mensajeDeError(error),
         tipo: "error",
-        textoBoton: "Aceptar",
-        mostrarCancelar: false,
-        });
-
-        setModalVisible(true);
+      });
     } finally {
-        setGuardando(false);
+      setGuardando(false);
     }
-    };
+  };
 
-    const guardarEvento = () => {
+  const guardarEvento = () => {
     if (
-        !titulo.trim() ||
-        !descripcion.trim() ||
-        !categoriaId ||
-        !fecha.trim() ||
-        !hora.trim()
+      !titulo.trim() ||
+      !descripcion.trim() ||
+      !categoriaId ||
+      !fecha.trim() ||
+      !hora.trim()
     ) {
-        Alert.alert("Datos incompletos", "Completá todos los campos.");
-        return;
+      mostrarMensaje({
+        titulo: "Datos incompletos",
+        mensaje: "Completá todos los campos antes de continuar.",
+        tipo: "warning",
+      });
+      return;
     }
 
     const fechaEvento = convertirFecha();
 
     if (!fechaEvento) {
-        Alert.alert(
-        "Fecha u hora inválida",
-        "Ingresá una fecha válida con formato DD/MM/AAAA y hora HH:MM."
-        );
-        return;
+      mostrarMensaje({
+        titulo: "Fecha u hora inválida",
+        mensaje:
+          "Ingresá una fecha válida y una hora válida. Revisá que la fecha tenga formato DD/MM/AAAA y la hora HH:MM.",
+        tipo: "error",
+      });
+      return;
     }
 
     if (fechaEvento <= new Date()) {
-        Alert.alert("Fecha inválida", "El evento debe tener una fecha futura.");
-        return;
+      mostrarMensaje({
+        titulo: "Fecha inválida",
+        mensaje: "El evento debe tener una fecha futura.",
+        tipo: "warning",
+      });
+      return;
     }
 
     setModalConfig({
-        titulo: "¿Crear evento?",
-        mensaje: "¿Estás seguro de que querés crear este evento? Se guardará como borrador y después podrás configurar sus entradas.",
-        tipo: "warning",
-        textoBoton: "Confirmar",
-        mostrarCancelar: true,
+      titulo: "¿Crear evento?",
+      mensaje:
+        "¿Estás seguro de que querés crear este evento? Se guardará como borrador y después podrás configurar sus entradas.",
+      tipo: "warning",
+      textoBoton: "Confirmar",
+      mostrarCancelar: true,
     });
 
     setModalVisible(true);
-    };
+  };
+
+  const formatearFecha = (texto) => {
+    const numeros = texto.replace(/\D/g, "").slice(0, 8);
+
+    if (numeros.length <= 2) {
+      return numeros;
+    }
+
+    if (numeros.length <= 4) {
+      return `${numeros.slice(0, 2)}/${numeros.slice(2)}`;
+    }
+
+    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4)}`;
+  };
+
+  const formatearHora = (texto) => {
+    const numeros = texto.replace(/\D/g, "").slice(0, 4);
+
+    if (numeros.length <= 2) {
+      return numeros;
+    }
+
+    return `${numeros.slice(0, 2)}:${numeros.slice(2)}`;
+  };
+
 
   const campo = (
     label,
@@ -237,13 +296,26 @@ export default function CreateEventScreen({ onCreated }) {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         >
-        <Text style={[styles.title, { color: C.text }]}>
+        <View style={styles.encabezado}>
+          <Text style={[styles.title, { color: C.text }]}>
             Crear evento
-        </Text>
+          </Text>
 
-        <Text style={[styles.subtitle, { color: C.muted }]}>
-            Completá la información para crear tu evento.
-        </Text>
+          <Text style={[styles.subtitle, { color: C.muted }]}>
+            Organizá tu próximo evento. Completá los datos
+            principales para comenzar.
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.formulario,
+            {
+              backgroundColor: C.surface,
+              borderColor: C.border,
+            },
+          ]}
+        >
 
         {campo(
             "Nombre del evento",
@@ -289,25 +361,45 @@ export default function CreateEventScreen({ onCreated }) {
         </View>
 
         {campo(
-            "Fecha (DD/MM/AAAA)",
-            fecha,
-            setFecha,
-            "15/12/2026"
+          "Fecha del evento",
+          fecha,
+          (texto) => setFecha(formatearFecha(texto)),
+          "DD/MM/AAAA",
+          { keyboardType: "numeric" }
         )}
 
         {campo(
-            "Hora (HH:MM)",
-            hora,
-            setHora,
-            "20:00"
+          "Hora del evento",
+          hora,
+          (texto) => setHora(formatearHora(texto)),
+          "HH:MM",
+          { keyboardType: "numeric" }
         )}
 
-        <View style={[styles.notice, { backgroundColor: C.card }]}>
-            <Text style={[styles.noticeText, { color: C.muted }]}>
-            El evento se creará como borrador. Luego podrás
-            configurar sus entradas y publicarlo.
-            </Text>
         </View>
+
+       <View
+        style={[
+          styles.notice,
+          {
+            backgroundColor: C.card,
+            borderColor: C.border,
+          },
+        ]}
+      >
+        <Text style={styles.noticeIcono}>ℹ</Text>
+
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.noticeTitulo, { color: C.text }]}>
+            Tu evento comenzará como borrador
+          </Text>
+
+          <Text style={[styles.noticeText, { color: C.muted }]}>
+            Luego podrás configurar los tipos de entrada,
+            precios y publicar tu evento.
+          </Text>
+        </View>
+      </View>
 
         <Pressable
             style={[
@@ -390,25 +482,25 @@ export default function CreateEventScreen({ onCreated }) {
 
         {/* Confirmación de creación */}
         <ConfirmacionModal
-        visible={modalVisible}
-        titulo={modalConfig.titulo}
-        mensaje={modalConfig.mensaje}
-        tipo={modalConfig.tipo}
-        textoBoton={modalConfig.textoBoton}
-        mostrarCancelar={modalConfig.mostrarCancelar}
-        textoCancelar="Cancelar"
-        onCancelar={() => setModalVisible(false)}
-        onAceptar={() => {
-            if (modalConfig.tipo === "warning") {
-            confirmarCreacion();
+          visible={modalVisible}
+          titulo={modalConfig.titulo}
+          mensaje={modalConfig.mensaje}
+          tipo={modalConfig.tipo}
+          textoBoton={modalConfig.textoBoton}
+          mostrarCancelar={modalConfig.mostrarCancelar}
+          textoCancelar="Cancelar"
+          onCancelar={() => setModalVisible(false)}
+          onAceptar={() => {
+            if (modalConfig.mostrarCancelar) {
+              confirmarCreacion();
             } else if (eventoPendiente) {
-            setModalVisible(false);
-            onCreated?.(eventoPendiente);
-            setEventoPendiente(null);
+              setModalVisible(false);
+              onCreated?.(eventoPendiente);
+              setEventoPendiente(null);
             } else {
-            setModalVisible(false);
+              setModalVisible(false);
             }
-        }}
+          }}
         />
     </View>
     );
@@ -484,6 +576,92 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#88888855",
     },
+
+    encabezado: {
+  marginBottom: 24,
+  marginTop: 10,
+},
+
+formulario: {
+  borderWidth: 1,
+  borderRadius: 22,
+  padding: 18,
+  gap: 4,
+  marginBottom: 20,
+},
+
+notice: {
+  flexDirection: "row",
+  alignItems: "flex-start",
+  gap: 12,
+  padding: 16,
+  borderRadius: 18,
+  borderWidth: 1,
+  marginBottom: 20,
+},
+
+noticeIcono: {
+  fontSize: 20,
+  fontWeight: "800",
+},
+
+noticeTitulo: {
+  fontSize: 14,
+  fontWeight: "800",
+  marginBottom: 6,
+},
+
+noticeText: {
+  fontSize: 13,
+  lineHeight: 20,
+},
+
+field: {
+  marginBottom: 16,
+},
+
+label: {
+  fontSize: 14,
+  fontWeight: "700",
+  marginBottom: 8,
+},
+
+input: {
+  borderWidth: 1,
+  borderRadius: 14,
+  paddingHorizontal: 14,
+  fontSize: 15,
+},
+
+title: {
+  fontSize: 28,
+  fontWeight: "900",
+  marginBottom: 8,
+},
+
+subtitle: {
+  fontSize: 15,
+  lineHeight: 22,
+},
+
+container: {
+  padding: 22,
+  paddingBottom: 40,
+},
+
+button: {
+  minHeight: 54,
+  borderRadius: 16,
+  justifyContent: "center",
+  alignItems: "center",
+  marginTop: 4,
+},
+
+buttonText: {
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "800",
+},
 });
 
 

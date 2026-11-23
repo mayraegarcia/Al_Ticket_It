@@ -15,6 +15,7 @@ import { compraService } from "../../../service/compraService";
 import ConfirmacionModal from "../../../components/ui/ConfirmacionModal";
 import { useAuth } from "../../../context/authContext";
 import { favoritoService } from "../../../service/favoritosService";
+import {resenaService} from "../../../service/reseñaService";
 
 
 export default function EventDetailScreen({ event, onBack }) {
@@ -34,6 +35,11 @@ export default function EventDetailScreen({ event, onBack }) {
     const [modalConfirmarCompra, setModalConfirmarCompra] = useState(false);
     const [modalCompraVisible, setModalCompraVisible] = useState(false);
     const [compraRealizada, setCompraRealizada] = useState(null);
+
+
+    const [resenas, setResenas] = useState([]);
+    const [cargandoResenas, setCargandoResenas] = useState(true);
+    const [errorResenas, setErrorResenas] = useState("");
 
     useEffect(() => {
         if (!event?.id || !usuario?.id) return;
@@ -61,6 +67,35 @@ export default function EventDetailScreen({ event, onBack }) {
 
         consultarFavorito();
     }, [event?.id, usuario?.id]);
+
+    useEffect(() => {
+
+        console.log("USE EFFECT RESEÑAS EJECUTADO");
+    console.log("EVENT ID:", event?.id);
+        if (!event?.id) return;
+
+        async function cargarResenas() {
+            try {
+                setCargandoResenas(true);
+                setErrorResenas("");
+
+                const respuesta = await resenaService.obtenerPorEvento(event.id);
+
+                const lista = Array.isArray(respuesta)
+                    ? respuesta
+                    : respuesta?.resenas || [];
+
+                setResenas(lista);
+            } catch (err) {
+                console.error("Error al cargar reseñas:", err);
+                setErrorResenas("No se pudieron cargar las reseñas.");
+            } finally {
+                setCargandoResenas(false);
+            }
+        }
+
+        cargarResenas();
+    }, [event?.id]);
 
     async function alternarFavorito() {
         if (!event?.id || procesandoFavorito) return;
@@ -364,6 +399,123 @@ export default function EventDetailScreen({ event, onBack }) {
         <Text style={[styles.description, { color: C.muted }]}>
             {descripcion}
         </Text>
+
+        {/* RESEÑAS DEL EVENTO */}
+
+        <View style={{ marginTop: 25 }}>
+            <Text style={[styles.sectionTitle, { color: C.text }]}>
+                Opiniones de asistentes
+            </Text>
+
+            {cargandoResenas ? (
+                <View style={{ padding: 20, alignItems: "center" }}>
+                    <ActivityIndicator color={C.primary} />
+
+                    <Text style={{ color: C.muted, marginTop: 10 }}>
+                        Cargando reseñas...
+                    </Text>
+                </View>
+            ) : errorResenas ? (
+                <Text style={{ color: C.muted, marginTop: 10 }}>
+                    {errorResenas}
+                </Text>
+            ) : resenas.length === 0 ? (
+                <View
+                    style={{
+                        backgroundColor: C.surface2,
+                        padding: 15,
+                        borderRadius: 12,
+                        marginTop: 10,
+                    }}
+                >
+                    <Text style={{ color: C.muted }}>
+                        Este evento todavía no tiene reseñas.
+                    </Text>
+                </View>
+            ) : (
+                <>
+                    <Text style={{ color: C.muted, marginBottom: 12 }}>
+                        {resenas.length} {resenas.length === 1
+                            ? "opinión"
+                            : "opiniones"}
+                    </Text>
+
+                    {resenas.map((resena, index) => (
+                        <View
+                            key={resena.id || index}
+                            style={{
+                                backgroundColor: C.surface,
+                                borderColor: C.border,
+                                borderWidth: 1,
+                                borderRadius: 14,
+                                padding: 15,
+                                marginBottom: 12,
+                            }}
+                        >
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        color: "#F5B301",
+                                        fontSize: 20,
+                                        fontWeight: "900",
+                                    }}
+                                >
+                                    {"★".repeat(Number(resena.puntuacion || 0))}
+                                    {"☆".repeat(
+                                        5 - Number(resena.puntuacion || 0)
+                                    )}
+                                </Text>
+
+                                <Text style={{ color: C.muted }}>
+                                    {resena.puntuacion}/5
+                                </Text>
+                            </View>
+
+                            <Text
+                                style={{
+                                    color: C.text,
+                                    fontWeight: "800",
+                                    marginTop: 10,
+                                }}
+                            >
+                                {resena.usuario?.nombre ||
+                                    resena.comprador?.nombre ||
+                                    resena.nombreUsuario ||
+                                    "Asistente"}
+                            </Text>
+
+                            <Text
+                                style={{
+                                    color: C.muted,
+                                    marginTop: 8,
+                                    lineHeight: 22,
+                                }}
+                            >
+                                {resena.detalle}
+                            </Text>
+
+                            {resena.fecha ? (
+                                <Text
+                                    style={{
+                                        color: C.muted,
+                                        fontSize: 12,
+                                        marginTop: 10,
+                                    }}
+                                >
+                                    {new Date(resena.fecha).toLocaleDateString("es-AR")}
+                                </Text>
+                            ) : null}
+                        </View>
+                    ))}
+                </>
+            )}
+        </View>
 
         <Text style={[styles.sectionTitle, { color: C.text }]}>
             Elegí tus entradas

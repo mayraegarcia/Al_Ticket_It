@@ -6,6 +6,7 @@ export class Evento {
     descripcion,
     categoriaId,
     fecha,
+    lugar,
     tiposEntrada = [],
     multimedia = [],
     organizadorId,
@@ -16,6 +17,7 @@ export class Evento {
     this.descripcion = descripcion;
     this.categoriaId = categoriaId;
     this.fecha = fecha;
+    this.lugar = lugar;
     this.tiposEntrada = tiposEntrada;
     this.multimedia = multimedia;
     this.organizadorId = organizadorId;

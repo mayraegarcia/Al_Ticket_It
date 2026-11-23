@@ -56,6 +56,19 @@ export class CompraController {
     }
   };
 
+  confirmarPago = (req, res, next) => {
+    try {
+      const compra = this.compraService.confirmarPago(
+        Number(req.params.id),
+        req.user.id
+      );
+
+      res.status(200).json(compra);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   cancelar = (req, res, next) => {
     try {
       const compra = this.compraService.cancelar(

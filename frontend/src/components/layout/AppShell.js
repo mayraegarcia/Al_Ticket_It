@@ -206,7 +206,11 @@ export default function AppShell() {
                 onBack={() => setEventoSeleccionado(null)}
               />
             ) : (
-              <HomeScreen onEventPress={setEventoSeleccionado} />
+              <HomeScreen
+                onEventPress={(evento) => {
+                    setEventoSeleccionado(evento);
+                }}
+            />
             )
           ) : tab === "Mis entradas" ? (
             <MyTicketsScreen usuario={usuario} />
